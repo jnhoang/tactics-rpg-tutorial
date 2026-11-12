@@ -9,6 +9,8 @@ public class Unit : MonoBehaviour
 
   private const float STOPPING_DISTANCE = 0.1f;
 
+  public int movementRange = 3;
+
   // Update is called once per frame
   void Update()
   {

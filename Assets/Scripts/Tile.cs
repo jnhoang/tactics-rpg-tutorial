@@ -10,7 +10,8 @@ public class Tile : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
   public Color selectedColor = Color.blue;
 
   private Renderer tileRenderer;
-  private static Tile selectedTile;
+  public static Tile selectedTile;
+  public bool inMoveRange = false;
 
   private void Start()
   {
@@ -35,7 +36,7 @@ public class Tile : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
   {
     if (selectedTile != this)
     {
-      ChangeColor(originalColor);
+      ChangeColor(inMoveRange ? Color.cyan : originalColor);
     }
   }
   public void OnPointerDown(PointerEventData eventData)
@@ -48,6 +49,9 @@ public class Tile : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
     selectedTile = this;
     ChangeColor(selectedColor);
 
-    FindAnyObjectByType<Unit>().MoveTo(transform.position, gridPosition);
+    FindAnyObjectByType<GridManager>().HighlightMoveRange(
+      this,
+      FindAnyObjectByType<Unit>().movementRange
+    );
   }
 }

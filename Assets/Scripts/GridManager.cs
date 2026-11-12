@@ -1,5 +1,5 @@
 using UnityEngine;
-
+using System.Collections.Generic;
 public class GridManager : MonoBehaviour
 {
   [Header("Map Settings")]
@@ -41,6 +41,101 @@ public class GridManager : MonoBehaviour
         tileScript.originalColor = renderer.material.color;
         map[x, y] = tileScript;
       }
+    }
+  }
+
+  private List<Tile> GetTileNeighbors(Vector2Int tilePosition)
+  {
+    List<Tile> neighbors = new List<Tile>();
+
+    for(int x = -1; x <= 1; x++)
+    {
+      for(int y = -1; y <= 1; y++)
+      {
+        int posX = tilePosition.x + x;
+        int posY = tilePosition.y + y;
+
+        if (
+          posX >= 0 &&
+          posY >= 0 &&
+          posX < width &&
+          posY < height &&
+          new Vector2Int(posX, posY) != tilePosition)
+        {
+          neighbors.Add(map[posX, posY]);
+        }
+      }
+    }
+
+    return neighbors;
+  }
+
+  private bool IsDiagonal(Tile a, Tile b)
+  {
+    int dx = Mathf.Abs(a.gridPosition.x - b.gridPosition.x);
+    int dy = Mathf.Abs(a.gridPosition.y - b.gridPosition.y);
+    return dx == 1 && dy == 1;
+  }
+
+  private void ResetGridHighlights()
+  {
+    foreach(Tile tile in map)
+    {
+      if(Tile.selectedTile != tile)
+      {
+        tile.inMoveRange = false;
+        tile.ChangeColor(tile.originalColor);
+      }
+    }
+  }
+
+  public List<Tile> GetHighlightRange(Vector2Int start, int range)
+  {
+    ResetGridHighlights();
+
+    List<Tile> reachable = new List<Tile>();
+    Dictionary<Tile, int> costSoFar = new Dictionary<Tile, int>();
+    Queue<Tile> edge = new Queue<Tile>();
+
+    Tile startTile = map[start.x, start.y];
+    edge.Enqueue(startTile);
+    costSoFar[startTile] = 0;
+
+    while(edge.Count > 0)
+    {
+      Tile current = edge.Dequeue();
+      int currentCost = costSoFar[current];
+
+      foreach(Tile neighbor in GetTileNeighbors(current.gridPosition))
+      {
+        int stepCost = IsDiagonal(current, neighbor) ? 2 : 1;
+        int newCost = currentCost + stepCost;
+
+        if(
+          newCost <= range &&
+          (!costSoFar.ContainsKey(neighbor) || newCost < costSoFar[neighbor]))
+        {
+          costSoFar[neighbor] = newCost;
+          edge.Enqueue(neighbor);
+
+          if(!reachable.Contains(neighbor) && neighbor != startTile)
+          {
+            reachable.Add(neighbor);
+            neighbor.inMoveRange = true;
+          }
+        }
+      }
+    }
+    return reachable;
+  }
+
+  public void HighlightMoveRange(Tile start, int range)
+  {
+    List<Tile> reachableTiles = GetHighlightRange(start.gridPosition, range);
+
+    foreach(Tile tile in reachableTiles)
+    {
+      tile.ChangeColor(Color.cyan);
     }
   }
 }
