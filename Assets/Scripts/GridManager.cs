@@ -138,4 +138,9 @@ public class GridManager : MonoBehaviour
       tile.ChangeColor(Color.cyan);
     }
   }
+
+  public Tile GetTile(Vector2Int position)
+  {
+    return map[position.x, position.y];
+  }
 }

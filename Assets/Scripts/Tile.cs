@@ -41,6 +41,23 @@ public class Tile : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
   }
   public void OnPointerDown(PointerEventData eventData)
   {
+    SelectTile();
+
+    if (Player.selectedUnit)
+    {
+      if (inMoveRange)
+      {
+        Player.selectedUnit.MoveTo(transform.position, gridPosition);
+      }
+      else
+      {
+        Player.selectedUnit = null;
+      }
+    }
+  }
+
+  private void SelectTile()
+  {
     if (selectedTile)
     {
       selectedTile.ChangeColor(selectedTile.originalColor);
@@ -48,10 +65,5 @@ public class Tile : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
 
     selectedTile = this;
     ChangeColor(selectedColor);
-
-    FindAnyObjectByType<GridManager>().HighlightMoveRange(
-      this,
-      FindAnyObjectByType<Unit>().movementRange
-    );
   }
 }
