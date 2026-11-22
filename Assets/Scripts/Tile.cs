@@ -13,10 +13,13 @@ public class Tile : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
   public static Tile selectedTile;
   public bool inMoveRange = false;
 
+  public int moveCost = 0;
+  public bool isOccupied = false;
+
   private void Start()
   {
     tileRenderer = GetComponentInChildren<Renderer>();
-    originalColor = tileRenderer.material.color;
+    ChangeColor(originalColor);
   }
 
   public void ChangeColor(Color newColor)
@@ -47,6 +50,8 @@ public class Tile : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
     {
       if (inMoveRange)
       {
+        GetComponentInParent<GridManager>().GetTile(Player.selectedUnit.gridPosition).isOccupied = false;
+        isOccupied = true;
         Player.selectedUnit.MoveTo(transform.position, gridPosition);
       }
       else

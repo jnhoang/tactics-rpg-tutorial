@@ -6,14 +6,18 @@ public class GridManager : MonoBehaviour
   public int width = 10;
   public int height = 10;
   public GameObject tilePrefab;
+  public string valueMap;
+  public const int MAX_MOVE_COST = 5;
+
 
   [Header("Materials")]
   public Material lightMaterial;
   public Material darkMaterial;
+  public Gradient terrainColors;
 
   private Tile[,] map;
   // Start is called once before the first execution of Update after the MonoBehaviour is created
-  void Start()
+  void Awake()
   {
     map = new Tile[width, height];
     GenerateGrid();
@@ -38,7 +42,11 @@ public class GridManager : MonoBehaviour
 
         Tile tileScript = tile.GetComponent<Tile>();
         tileScript.gridPosition = new Vector2Int(x, y);
-        tileScript.originalColor = renderer.material.color;
+        tileScript.moveCost = valueMap[x + y * width] - '0';
+        float normalizedCost = (float)tileScript.moveCost / MAX_MOVE_COST;
+        tileScript.originalColor =  tileScript.moveCost > MAX_MOVE_COST
+                                      ? Color.red
+                                      : terrainColors.Evaluate(normalizedCost);
         map[x, y] = tileScript;
       }
     }
@@ -93,9 +101,9 @@ public class GridManager : MonoBehaviour
   {
     ResetGridHighlights();
 
-    List<Tile> reachable = new List<Tile>();
+    List<Tile> reachable            = new List<Tile>();
     Dictionary<Tile, int> costSoFar = new Dictionary<Tile, int>();
-    Queue<Tile> edge = new Queue<Tile>();
+    Queue<Tile> edge                = new Queue<Tile>();
 
     Tile startTile = map[start.x, start.y];
     edge.Enqueue(startTile);
@@ -108,12 +116,17 @@ public class GridManager : MonoBehaviour
 
       foreach(Tile neighbor in GetTileNeighbors(current.gridPosition))
       {
-        int stepCost = IsDiagonal(current, neighbor) ? 2 : 1;
-        int newCost = currentCost + stepCost;
+        // int stepCost = IsDiagonal(current, neighbor) ? 1 + neighbor.moveCost : neighbor.moveCost;
+        int stepCost = neighbor.moveCost + (IsDiagonal(current, neighbor) ? 1 : 0);
+        int newCost  = currentCost + stepCost;
 
         if(
           newCost <= range &&
-          (!costSoFar.ContainsKey(neighbor) || newCost < costSoFar[neighbor]))
+          (
+            !costSoFar.ContainsKey(neighbor) ||
+            newCost < costSoFar[neighbor]
+          ) &&
+          !neighbor.isOccupied)
         {
           costSoFar[neighbor] = newCost;
           edge.Enqueue(neighbor);
@@ -142,5 +155,16 @@ public class GridManager : MonoBehaviour
   public Tile GetTile(Vector2Int position)
   {
     return map[position.x, position.y];
+  }
+
+  public Tile GetTile(Vector3 position)
+  {
+    float offsetX = width / 2f;
+    float offsetY = height / 2f;
+
+    int x = Mathf.RoundToInt(position.x + offsetX);
+    int y = Mathf.RoundToInt(position.z + offsetY);
+
+    return map[x, y];
   }
 }
