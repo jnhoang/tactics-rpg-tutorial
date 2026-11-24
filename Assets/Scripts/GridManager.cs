@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
+
 public class GridManager : MonoBehaviour
 {
   [Header("Map Settings")]
@@ -8,7 +10,6 @@ public class GridManager : MonoBehaviour
   public GameObject tilePrefab;
   public string valueMap;
   public const int MAX_MOVE_COST = 5;
-
 
   [Header("Materials")]
   public Material lightMaterial;
@@ -79,7 +80,7 @@ public class GridManager : MonoBehaviour
   }
 
   private bool IsDiagonal(Tile a, Tile b)
-  {
+{
     int dx = Mathf.Abs(a.gridPosition.x - b.gridPosition.x);
     int dy = Mathf.Abs(a.gridPosition.y - b.gridPosition.y);
     return dx == 1 && dy == 1;
@@ -166,5 +167,69 @@ public class GridManager : MonoBehaviour
     int y = Mathf.RoundToInt(position.z + offsetY);
 
     return map[x, y];
+  }
+
+  private int GetHeuristic (Tile start, Tile end)
+  {
+    return Mathf.Abs(start.gridPosition.x - end.gridPosition.x) + Mathf.Abs(start.gridPosition.y - end.gridPosition.y);
+  }
+
+  private List<Tile> RetracePath(Tile start, Tile end)
+  {
+    List<Tile> path = new List<Tile>();
+    Tile current = end;
+
+    while(current != start)
+    {
+      path.Add(current);
+      current = current.parent;
+    }
+
+    path.Reverse();
+    return path;
+  }
+
+  public List<Tile> GetPath(Tile start, Tile end)
+  {
+    List<Tile> openSet = new List<Tile>();
+    HashSet<Tile> closedSet = new HashSet<Tile>();
+
+    openSet.Add(start);
+    start.gCost = 0;
+    start.hCost = GetHeuristic(start, end);
+
+    while(openSet.Count > 0)
+    {
+      Tile current = openSet.OrderBy(tile => tile.fCost).ThenBy(tile => tile.hCost).First();
+
+      if (current == end)
+      {
+        return RetracePath(start, end);
+      }
+
+      openSet.Remove(current);
+      closedSet.Add(current);
+
+      foreach(Tile neighbor in GetTileNeighbors(current.gridPosition))
+      {
+        if (neighbor.isOccupied || closedSet.Contains(neighbor)) continue;
+
+        int newGCost = current.gCost + neighbor.moveCost;
+
+        if(newGCost < neighbor.gCost || !openSet.Contains(neighbor))
+        {
+          neighbor.gCost = newGCost;
+          neighbor.hCost = GetHeuristic(neighbor, end);
+          neighbor.parent = current;
+
+          if(!openSet.Contains(neighbor))
+          {
+            openSet.Add(neighbor);
+          }
+        }
+      }
+    }
+
+    return null;
   }
 }
